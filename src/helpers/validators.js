@@ -13,20 +13,24 @@
  * Если какие либо функции написаны руками (без использования библиотек) это не является ошибкой
  */
 
-import { last } from 'ramda'
-import {} from 'ramda'
 import {
 	allPass,
 	anyPass,
 	toPairs,
 	propEq,
+	eqBy,
 	equals,
 	map,
 	head,
+	length,
 	compose,
 	values,
+	prop,
 	keys,
+	pickBy,
+	isNil,
 	filter,
+	converge,
 } from 'ramda'
 
 const shapeColorPairs = field => toPairs(field)
@@ -46,6 +50,13 @@ const fieldN1 = {
 	circle: 'white',
 }
 
+const fieldN4 = {
+	star: 'green',
+	square: 'green',
+	triangle: null,
+	circle: 'green',
+}
+
 const fieldN7 = {
 	star: 'orange',
 	square: 'orange',
@@ -63,28 +74,42 @@ const fieldN9 = {
 const getColor = values
 const getShape = keys
 
+const filterNil = pickBy(value => !isNil(value))
+
 const isGreen = equals('green')
 const isRed = equals('red')
 const isBlue = equals('blue')
 const isOrange = equals('orange')
 const isWhite = equals('white')
 
-const greenColors = filter(isGreen)
+const isBlueCircle = compose(equals('blue'), prop('circle'))
+const isRedStar = compose(equals('red'), prop('star'))
+const isOrangeSquare = compose(equals('orange'), prop('square'))
 
-const filterByColor = colorPredicate =>
-	compose(map(head), filter(compose(colorPredicate, last)), toPairs)
+const greenColors = filter(isGreen)
+const redColors = filter(isRed)
+const blueColors = filter(isBlue)
+
+const twoMore = colors => colors.length >= 2
+const threeMore = colors => colors.length >= 3
+
+const equalQuantity = converge(eqBy(length), [redColors, blueColors])
 
 // 1. Красная звезда, зеленый квадрат, все остальные белые.
 export const validateFieldN1 = generateChecks(fieldN1)
 
 // 2. Как минимум две фигуры зеленые.
-export const validateFieldN2 = () => false
+export const validateFieldN2 = compose(twoMore, greenColors, getColor)
 
 // 3. Количество красных фигур равно кол-ву синих.
-export const validateFieldN3 = () => false
+export const validateFieldN3 = compose(equalQuantity, getColor)
 
 // 4. Синий круг, красная звезда, оранжевый квадрат треугольник любого цвета
-export const validateFieldN4 = () => false
+export const validateFieldN4 = allPass([
+	isBlueCircle,
+	isRedStar,
+	isOrangeSquare,
+])
 
 // 5. Три фигуры одного любого цвета кроме белого (четыре фигуры одного цвета – это тоже true).
 export const validateFieldN5 = () => false
