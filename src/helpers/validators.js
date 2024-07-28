@@ -14,23 +14,25 @@
  */
 
 import {
+	__,
+	gte,
 	allPass,
-	anyPass,
+	any,
 	toPairs,
 	propEq,
 	eqBy,
 	equals,
 	map,
-	head,
 	length,
 	compose,
 	values,
 	prop,
-	keys,
-	pickBy,
-	isNil,
 	filter,
+	dissoc,
 	converge,
+	identity,
+	countBy,
+	complement,
 } from 'ramda'
 
 const shapeColorPairs = field => toPairs(field)
@@ -50,13 +52,6 @@ const fieldN1 = {
 	circle: 'white',
 }
 
-const fieldN4 = {
-	star: 'green',
-	square: 'green',
-	triangle: null,
-	circle: 'green',
-}
-
 const fieldN7 = {
 	star: 'orange',
 	square: 'orange',
@@ -72,26 +67,46 @@ const fieldN9 = {
 }
 
 const getColor = values
-const getShape = keys
-
-const filterNil = pickBy(value => !isNil(value))
+const getGreen = prop('green')
+const getRed = prop('red')
 
 const isGreen = equals('green')
 const isRed = equals('red')
 const isBlue = equals('blue')
-const isOrange = equals('orange')
-const isWhite = equals('white')
 
-const isBlueCircle = compose(equals('blue'), prop('circle'))
-const isRedStar = compose(equals('red'), prop('star'))
-const isOrangeSquare = compose(equals('orange'), prop('square'))
+const isBlueCircle = propEq('circle', 'blue')
+const isRedStar = propEq('star', 'red')
+const isOrangeSquare = propEq('square', 'orange')
+const isGreenTriangle = propEq('triangle', 'green')
+const isWhiteTriangle = propEq('triangle', 'white')
+const isWhiteStar = propEq('star', 'white')
+const isWhiteSquare = propEq('square', 'white')
+const isNotRedStar = complement(isRedStar)
+const isNotWhiteStar = complement(isWhiteStar)
+const isNotWhiteSquare = complement(isWhiteSquare)
+const isNotWhiteTriangle = complement(isWhiteTriangle)
 
 const greenColors = filter(isGreen)
 const redColors = filter(isRed)
 const blueColors = filter(isBlue)
 
 const twoMore = colors => colors.length >= 2
-const threeMore = colors => colors.length >= 3
+const isTriangleEqualsSquare = ({ triangle, square }) => triangle === square
+
+const colorsCount = compose(countBy(identity), getColor)
+const excludeWhite = dissoc('white')
+const colorsCountExcludeWhite = compose(excludeWhite, colorsCount)
+
+const isEqualsOne = equals(__, 1)
+const isGreaterThenTwo = gte(__, 2)
+const isGreaterThenThree = gte(__, 3)
+
+const countOfGreen = compose(getGreen, colorsCount)
+const countOfRed = compose(getRed, colorsCount)
+
+const anyGreaterThenThree = compose(any(isGreaterThenThree), getColor)
+const isGreenEqualsTwo = compose(isGreaterThenTwo, countOfGreen)
+const isRedEqualsOne = compose(isEqualsOne, countOfRed)
 
 const equalQuantity = converge(eqBy(length), [redColors, blueColors])
 
@@ -112,19 +127,30 @@ export const validateFieldN4 = allPass([
 ])
 
 // 5. Три фигуры одного любого цвета кроме белого (четыре фигуры одного цвета – это тоже true).
-export const validateFieldN5 = () => false
+export const validateFieldN5 = compose(
+	anyGreaterThenThree,
+	colorsCountExcludeWhite
+)
 
 // 6. Ровно две зеленые фигуры (одна из зелёных – это треугольник), плюс одна красная. Четвёртая оставшаяся любого доступного цвета, но не нарушающая первые два условия
-export const validateFieldN6 = () => false
+export const validateFieldN6 = allPass([
+	isGreenTriangle,
+	isGreenEqualsTwo,
+	isRedEqualsOne,
+])
 
 // 7. Все фигуры оранжевые.
 export const validateFieldN7 = generateChecks(fieldN7)
 
 // 8. Не красная и не белая звезда, остальные – любого цвета.
-export const validateFieldN8 = () => false
+export const validateFieldN8 = allPass([isNotRedStar, isNotWhiteStar])
 
 // 9. Все фигуры зеленые.
 export const validateFieldN9 = generateChecks(fieldN9)
 
 // 10. Треугольник и квадрат одного цвета (не белого), остальные – любого цвета
-export const validateFieldN10 = () => false
+export const validateFieldN10 = allPass([
+	isTriangleEqualsSquare,
+	isNotWhiteTriangle,
+	isNotWhiteSquare,
+])
